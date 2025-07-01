@@ -570,6 +570,7 @@ _$PortfolioHoldingImpl _$$PortfolioHoldingImplFromJson(
       totalReturnPercent: (json['totalReturnPercent'] as num).toDouble(),
       firstPurchase: DateTime.parse(json['firstPurchase'] as String),
       lastPurchase: DateTime.parse(json['lastPurchase'] as String),
+      companyName: json['companyName'] as String?,
     );
 
 Map<String, dynamic> _$$PortfolioHoldingImplToJson(
@@ -584,6 +585,7 @@ Map<String, dynamic> _$$PortfolioHoldingImplToJson(
       'totalReturnPercent': instance.totalReturnPercent,
       'firstPurchase': instance.firstPurchase.toIso8601String(),
       'lastPurchase': instance.lastPurchase.toIso8601String(),
+      'companyName': instance.companyName,
     };
 
 _$PortfolioTransactionImpl _$$PortfolioTransactionImplFromJson(

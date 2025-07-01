@@ -79,24 +79,24 @@ StockScouter isn't just another stock app - it's a **comprehensive trading intel
 ### Installation
 
 1. **Clone the repository**
-   ```bash
+```bash
    git clone https://github.com/WaleedaRaza/stockscouter.git
    cd stockscouter
-   ```
+```
 
 2. **Install dependencies**
-   ```bash
-   flutter pub get
-   ```
+```bash
+flutter pub get
+```
 
 3. **Configure API Keys**
    - Add your Finnhub API key to `lib/constants/api_constants.dart`
    - Optional: Add Alpha Vantage API key for backup data
 
 4. **Run the app**
-   ```bash
-   flutter run
-   ```
+```bash
+flutter run
+```
 
 ## 📱 **App Structure**
 

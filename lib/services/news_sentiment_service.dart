@@ -45,10 +45,10 @@ class NewsSentimentService {
     
     for (final article in articles) {
       final sentiment = await _analyzeArticleSentiment(article);
-      totalSentiment += sentiment.score;
+      totalSentiment += sentiment;
       
-      if (sentiment.score > 0.1) bullishCount++;
-      else if (sentiment.score < -0.1) bearishCount++;
+      if (sentiment > 0.1) bullishCount++;
+      else if (sentiment < -0.1) bearishCount++;
       else neutralCount++;
     }
     

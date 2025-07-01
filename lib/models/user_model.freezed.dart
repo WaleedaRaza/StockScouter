@@ -6219,6 +6219,7 @@ mixin _$PortfolioHolding {
   double get totalReturnPercent => throw _privateConstructorUsedError;
   DateTime get firstPurchase => throw _privateConstructorUsedError;
   DateTime get lastPurchase => throw _privateConstructorUsedError;
+  String? get companyName => throw _privateConstructorUsedError;
 
   /// Serializes this PortfolioHolding to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -6245,7 +6246,8 @@ abstract class $PortfolioHoldingCopyWith<$Res> {
       double totalReturn,
       double totalReturnPercent,
       DateTime firstPurchase,
-      DateTime lastPurchase});
+      DateTime lastPurchase,
+      String? companyName});
 }
 
 /// @nodoc
@@ -6272,6 +6274,7 @@ class _$PortfolioHoldingCopyWithImpl<$Res, $Val extends PortfolioHolding>
     Object? totalReturnPercent = null,
     Object? firstPurchase = null,
     Object? lastPurchase = null,
+    Object? companyName = freezed,
   }) {
     return _then(_value.copyWith(
       symbol: null == symbol
@@ -6310,6 +6313,10 @@ class _$PortfolioHoldingCopyWithImpl<$Res, $Val extends PortfolioHolding>
           ? _value.lastPurchase
           : lastPurchase // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      companyName: freezed == companyName
+          ? _value.companyName
+          : companyName // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -6331,7 +6338,8 @@ abstract class _$$PortfolioHoldingImplCopyWith<$Res>
       double totalReturn,
       double totalReturnPercent,
       DateTime firstPurchase,
-      DateTime lastPurchase});
+      DateTime lastPurchase,
+      String? companyName});
 }
 
 /// @nodoc
@@ -6356,6 +6364,7 @@ class __$$PortfolioHoldingImplCopyWithImpl<$Res>
     Object? totalReturnPercent = null,
     Object? firstPurchase = null,
     Object? lastPurchase = null,
+    Object? companyName = freezed,
   }) {
     return _then(_$PortfolioHoldingImpl(
       symbol: null == symbol
@@ -6394,6 +6403,10 @@ class __$$PortfolioHoldingImplCopyWithImpl<$Res>
           ? _value.lastPurchase
           : lastPurchase // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      companyName: freezed == companyName
+          ? _value.companyName
+          : companyName // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -6410,7 +6423,8 @@ class _$PortfolioHoldingImpl implements _PortfolioHolding {
       required this.totalReturn,
       required this.totalReturnPercent,
       required this.firstPurchase,
-      required this.lastPurchase});
+      required this.lastPurchase,
+      this.companyName});
 
   factory _$PortfolioHoldingImpl.fromJson(Map<String, dynamic> json) =>
       _$$PortfolioHoldingImplFromJson(json);
@@ -6433,10 +6447,12 @@ class _$PortfolioHoldingImpl implements _PortfolioHolding {
   final DateTime firstPurchase;
   @override
   final DateTime lastPurchase;
+  @override
+  final String? companyName;
 
   @override
   String toString() {
-    return 'PortfolioHolding(symbol: $symbol, shares: $shares, averagePrice: $averagePrice, currentPrice: $currentPrice, marketValue: $marketValue, totalReturn: $totalReturn, totalReturnPercent: $totalReturnPercent, firstPurchase: $firstPurchase, lastPurchase: $lastPurchase)';
+    return 'PortfolioHolding(symbol: $symbol, shares: $shares, averagePrice: $averagePrice, currentPrice: $currentPrice, marketValue: $marketValue, totalReturn: $totalReturn, totalReturnPercent: $totalReturnPercent, firstPurchase: $firstPurchase, lastPurchase: $lastPurchase, companyName: $companyName)';
   }
 
   @override
@@ -6459,7 +6475,9 @@ class _$PortfolioHoldingImpl implements _PortfolioHolding {
             (identical(other.firstPurchase, firstPurchase) ||
                 other.firstPurchase == firstPurchase) &&
             (identical(other.lastPurchase, lastPurchase) ||
-                other.lastPurchase == lastPurchase));
+                other.lastPurchase == lastPurchase) &&
+            (identical(other.companyName, companyName) ||
+                other.companyName == companyName));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -6474,7 +6492,8 @@ class _$PortfolioHoldingImpl implements _PortfolioHolding {
       totalReturn,
       totalReturnPercent,
       firstPurchase,
-      lastPurchase);
+      lastPurchase,
+      companyName);
 
   /// Create a copy of PortfolioHolding
   /// with the given fields replaced by the non-null parameter values.
@@ -6503,7 +6522,8 @@ abstract class _PortfolioHolding implements PortfolioHolding {
       required final double totalReturn,
       required final double totalReturnPercent,
       required final DateTime firstPurchase,
-      required final DateTime lastPurchase}) = _$PortfolioHoldingImpl;
+      required final DateTime lastPurchase,
+      final String? companyName}) = _$PortfolioHoldingImpl;
 
   factory _PortfolioHolding.fromJson(Map<String, dynamic> json) =
       _$PortfolioHoldingImpl.fromJson;
@@ -6526,6 +6546,8 @@ abstract class _PortfolioHolding implements PortfolioHolding {
   DateTime get firstPurchase;
   @override
   DateTime get lastPurchase;
+  @override
+  String? get companyName;
 
   /// Create a copy of PortfolioHolding
   /// with the given fields replaced by the non-null parameter values.

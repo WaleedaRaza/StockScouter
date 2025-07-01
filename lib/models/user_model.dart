@@ -317,6 +317,7 @@ class PortfolioHolding with _$PortfolioHolding {
     required double totalReturnPercent,
     required DateTime firstPurchase,
     required DateTime lastPurchase,
+    String? companyName,
   }) = _PortfolioHolding;
 
   factory PortfolioHolding.fromJson(Map<String, dynamic> json) => _$PortfolioHoldingFromJson(json);

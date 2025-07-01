@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-
-import '../models/stock_model.dart';
+import '../models/stock.dart';
 import '../constants/theme_constants.dart';
 
 class StockCard extends StatelessWidget {
@@ -9,7 +7,6 @@ class StockCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onFavorite;
   final bool isFavorite;
-  final bool showChart;
 
   const StockCard({
     super.key,
@@ -17,25 +14,21 @@ class StockCard extends StatelessWidget {
     this.onTap,
     this.onFavorite,
     this.isFavorite = false,
-    this.showChart = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isPositive = stock.priceChangePercent != null && stock.priceChangePercent! >= 0;
-    final changeColor = isPositive ? Colors.green : Colors.red;
+    final isPositive = stock.changePercent >= 0;
+    final changeColor = isPositive ? AppColors.success : AppColors.error;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.1),
-          ),
+          border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -50,35 +43,17 @@ class StockCard extends StatelessWidget {
             // Header Row
             Row(
               children: [
-                // Stock Logo/Icon
+                // Stock Icon
                 Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: stock.logoUrl != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: stock.logoUrl!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Icon(
+                  child: Icon(
                               Icons.business,
-                              color: theme.colorScheme.primary,
-                              size: 20,
-                            ),
-                            errorWidget: (context, url, error) => Icon(
-                              Icons.business,
-                              color: theme.colorScheme.primary,
-                              size: 20,
-                            ),
-                          ),
-                        )
-                      : Icon(
-                          Icons.business,
-                          color: theme.colorScheme.primary,
+                    color: AppColors.primary,
                           size: 20,
                         ),
                 ),
@@ -90,14 +65,17 @@ class StockCard extends StatelessWidget {
                     children: [
                       Text(
                         stock.symbol,
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       Text(
                         stock.name,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -110,7 +88,7 @@ class StockCard extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite ? Colors.red : theme.colorScheme.onSurfaceVariant,
+                      color: isFavorite ? Colors.red : AppColors.textSecondary,
                       size: 20,
                     ),
                     onPressed: onFavorite,
@@ -126,9 +104,11 @@ class StockCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '\$${stock.currentPrice?.toStringAsFixed(2) ?? '0.00'}',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        '\$${stock.price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -141,16 +121,18 @@ class StockCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${stock.priceChangePercent?.toStringAsFixed(2) ?? '0.00'}%',
-                            style: theme.textTheme.bodyMedium?.copyWith(
+                            '${isPositive ? '+' : ''}${stock.changePercent.toStringAsFixed(2)}%',
+                            style: TextStyle(
+                              fontSize: 14,
                               color: changeColor,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '\$${stock.priceChange?.toStringAsFixed(2) ?? '0.00'}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
+                            '${isPositive ? '+' : ''}\$${stock.change.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 14,
                               color: changeColor,
                               fontWeight: FontWeight.w500,
                             ),
@@ -161,21 +143,23 @@ class StockCard extends StatelessWidget {
                   ),
                 ),
                 // Market Cap
-                if (stock.marketCap != null)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
+                    const Text(
                         'Market Cap',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _formatMarketCap(stock.marketCap!),
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                      _formatMarketCap(stock.marketCap),
+                      style: const TextStyle(
+                        fontSize: 14,
                           fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -183,44 +167,25 @@ class StockCard extends StatelessWidget {
               ],
             ),
             // Volume and Additional Info
-            if (stock.volume != null || stock.peRatio != null || stock.dividendYield != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Row(
                   children: [
-                    if (stock.volume != null) ...[
                       _buildInfoChip(
-                        theme,
-                        'Vol: ${_formatVolume(stock.volume!)}',
+                    'Vol: ${_formatVolume(stock.volume)}',
                         Icons.bar_chart,
                       ),
                       const SizedBox(width: 8),
-                    ],
-                    if (stock.peRatio != null) ...[
                       _buildInfoChip(
-                        theme,
-                        'P/E: ${stock.peRatio!.toStringAsFixed(2)}',
-                        Icons.analytics,
+                    'High: \$${stock.high.toStringAsFixed(2)}',
+                    Icons.trending_up,
                       ),
                       const SizedBox(width: 8),
-                    ],
-                    if (stock.dividendYield != null) ...[
                       _buildInfoChip(
-                        theme,
-                        'Div: ${stock.dividendYield!.toStringAsFixed(2)}%',
-                        Icons.account_balance,
+                    'Low: \$${stock.low.toStringAsFixed(2)}',
+                    Icons.trending_down,
                       ),
                     ],
-                  ],
-                ),
-              ),
-            // Mini Chart
-            if (showChart && stock.priceHistory.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: SizedBox(
-                  height: 60,
-                  child: _buildMiniChart(theme, stock.priceHistory),
                 ),
               ),
           ],
@@ -229,12 +194,13 @@ class StockCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip(ThemeData theme, String label, IconData icon) {
+  Widget _buildInfoChip(String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(6),
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -242,14 +208,14 @@ class StockCard extends StatelessWidget {
           Icon(
             icon,
             size: 12,
-            color: theme.colorScheme.onSurfaceVariant,
+            color: AppColors.textSecondary,
           ),
           const SizedBox(width: 4),
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -257,106 +223,27 @@ class StockCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMiniChart(ThemeData theme, List<PricePoint> priceHistory) {
-    if (priceHistory.isEmpty) return const SizedBox.shrink();
-
-    final prices = priceHistory.map((point) => point.price).toList();
-    final minPrice = prices.reduce((a, b) => a < b ? a : b);
-    final maxPrice = prices.reduce((a, b) => a > b ? a : b);
-    final priceRange = maxPrice - minPrice;
-
-    return CustomPaint(
-      size: const Size(double.infinity, 60),
-      painter: _StockChartPainter(
-        prices: prices,
-        minPrice: minPrice,
-        priceRange: priceRange,
-        color: theme.colorScheme.primary,
-        isPositive: priceHistory.last.price >= priceHistory.first.price,
-      ),
-    );
-  }
-
   String _formatMarketCap(double marketCap) {
     if (marketCap >= 1e12) {
-      return '\$${(marketCap / 1e12).toStringAsFixed(2)}T';
+      return '\$${(marketCap / 1e12).toStringAsFixed(1)}T';
     } else if (marketCap >= 1e9) {
-      return '\$${(marketCap / 1e9).toStringAsFixed(2)}B';
+      return '\$${(marketCap / 1e9).toStringAsFixed(1)}B';
     } else if (marketCap >= 1e6) {
-      return '\$${(marketCap / 1e6).toStringAsFixed(2)}M';
+      return '\$${(marketCap / 1e6).toStringAsFixed(1)}M';
     } else {
       return '\$${marketCap.toStringAsFixed(0)}';
     }
   }
 
-  String _formatVolume(double volume) {
+  String _formatVolume(int volume) {
     if (volume >= 1e9) {
-      return '${(volume / 1e9).toStringAsFixed(2)}B';
+      return '${(volume / 1e9).toStringAsFixed(1)}B';
     } else if (volume >= 1e6) {
-      return '${(volume / 1e6).toStringAsFixed(2)}M';
+      return '${(volume / 1e6).toStringAsFixed(1)}M';
     } else if (volume >= 1e3) {
-      return '${(volume / 1e3).toStringAsFixed(2)}K';
+      return '${(volume / 1e3).toStringAsFixed(1)}K';
     } else {
-      return volume.toStringAsFixed(0);
+      return volume.toString();
     }
   }
-}
-
-class _StockChartPainter extends CustomPainter {
-  final List<double> prices;
-  final double minPrice;
-  final double priceRange;
-  final Color color;
-  final bool isPositive;
-
-  _StockChartPainter({
-    required this.prices,
-    required this.minPrice,
-    required this.priceRange,
-    required this.color,
-    required this.isPositive,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (prices.isEmpty) return;
-
-    final paint = Paint()
-      ..color = isPositive ? Colors.green : Colors.red
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-
-    final fillPaint = Paint()
-      ..color = (isPositive ? Colors.green : Colors.red).withOpacity(0.1)
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    final fillPath = Path();
-
-    final stepX = size.width / (prices.length - 1);
-    final stepY = size.height / priceRange;
-
-    for (int i = 0; i < prices.length; i++) {
-      final x = i * stepX;
-      final y = size.height - ((prices[i] - minPrice) * stepY);
-
-      if (i == 0) {
-        path.moveTo(x, y);
-        fillPath.moveTo(x, size.height);
-        fillPath.lineTo(x, y);
-      } else {
-        path.lineTo(x, y);
-        fillPath.lineTo(x, y);
-      }
-    }
-
-    fillPath.lineTo(size.width, size.height);
-    fillPath.close();
-
-    canvas.drawPath(fillPath, fillPaint);
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 } 

@@ -1,652 +1,273 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:retrofit/retrofit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../models/news_model.dart';
+import '../models/financial_news_models.dart' as fnm;
 import '../constants/app_constants.dart';
 
-part 'news_service.g.dart';
-
-@RestApi(baseUrl: AppConstants.baseUrl)
-abstract class NewsService {
-  factory NewsService(Dio dio, {String baseUrl}) = _NewsService;
-
-  // News Sources
-  @GET('/news/sources')
-  Future<List<NewsSource>> getNewsSources();
-
-  @GET('/news/headlines')
-  Future<List<NewsArticle>> getHeadlines(
-    @Query('category') String? category,
-    @Query('source') String? source,
-    @Query('limit') int? limit,
-  );
-
-  @GET('/news/search')
-  Future<List<NewsArticle>> searchNews(
-    @Query('query') String query,
-    @Query('category') String? category,
-    @Query('source') String? source,
-    @Query('date_from') String? dateFrom,
-    @Query('date_to') String? dateTo,
-  );
-
-  @GET('/news/company/{symbol}')
-  Future<List<NewsArticle>> getCompanyNews(
-    @Path('symbol') String symbol,
-    @Query('limit') int? limit,
-  );
-
-  @GET('/news/market-sentiment')
-  Future<MarketSentiment> getMarketSentiment();
-
-  // RAG and NLP
-  @POST('/news/rag/query')
-  Future<RAGResponse> queryRAG(@Body() RAGQuery query);
-
-  @POST('/news/rag/context')
-  Future<RAGContext> getRAGContext(@Body() RAGQuery query);
-
-  @POST('/news/sentiment/analyze')
-  Future<SentimentAnalysis> analyzeSentiment(@Body() SentimentRequest request);
-
-  @POST('/news/stance/detect')
-  Future<StanceDetection> detectStance(@Body() StanceRequest request);
-
-  @POST('/news/summarize')
-  Future<NewsSummary> summarizeArticle(@Body() SummaryRequest request);
-
-  @POST('/news/extract/entities')
-  Future<EntityExtraction> extractEntities(@Body() EntityRequest request);
-
-  @POST('/news/classify')
-  Future<NewsClassification> classifyArticle(@Body() ClassificationRequest request);
-
-  // News Aggregation
-  @GET('/news/trending')
-  Future<List<TrendingTopic>> getTrendingTopics();
-
-  @GET('/news/breaking')
-  Future<List<NewsArticle>> getBreakingNews();
-
-  @GET('/news/earnings')
-  Future<List<NewsArticle>> getEarningsNews();
-
-  @GET('/news/economic-calendar')
-  Future<List<EconomicEvent>> getEconomicCalendar();
-
-  // News Analytics
-  @GET('/news/analytics/volume')
-  Future<NewsVolumeAnalytics> getNewsVolumeAnalytics();
-
-  @GET('/news/analytics/sentiment-trends')
-  Future<SentimentTrends> getSentimentTrends();
-
-  @GET('/news/analytics/impact-scores')
-  Future<List<ImpactScore>> getImpactScores();
-
-  // News Recommendations
-  @POST('/news/recommendations')
-  Future<List<NewsArticle>> getPersonalizedNews(@Body() RecommendationRequest request);
-
-  @GET('/news/recommendations/user/{userId}')
-  Future<List<NewsArticle>> getUserRecommendations(@Path('userId') String userId);
-
-  // News Alerts
-  @POST('/news/alerts/create')
-  Future<NewsAlert> createNewsAlert(@Body() NewsAlertRequest request);
-
-  @GET('/news/alerts/user/{userId}')
-  Future<List<NewsAlert>> getUserAlerts(@Path('userId') String userId);
-
-  @DELETE('/news/alerts/{alertId}')
-  Future<void> deleteNewsAlert(@Path('alertId') String alertId);
-}
-
-class NewsServiceImplementation {
-  final NewsService _newsService;
+class NewsService {
   final Dio _dio;
-  final SharedPreferences _prefs;
+  SharedPreferences? _prefs;
 
-  NewsServiceImplementation(this._newsService, this._dio, this._prefs);
-
-  // Cache keys
-  static const String _headlinesCacheKey = 'headlines_cache';
-  static const String _sourcesCacheKey = 'sources_cache';
-  static const String _sentimentCacheKey = 'sentiment_cache';
-  static const String _trendingCacheKey = 'trending_cache';
-
-  // Get headlines with caching
-  Future<List<NewsArticle>> getHeadlines({
-    String? category,
-    String? source,
-    int limit = 20,
-  }) async {
-    try {
-      // Check cache first
-      final cached = await _getCachedHeadlines(category, source);
-      if (cached != null) {
-        return cached.take(limit).toList();
-      }
-
-      // Fetch from API
-      final headlines = await _newsService.getHeadlines(category, source, limit);
-      
-      // Cache the results
-      await _cacheHeadlines(headlines, category, source);
-      
-      return headlines;
-    } catch (e) {
-      // Return cached data if available
-      final cached = await _getCachedHeadlines(category, source);
-      if (cached != null) {
-        return cached.take(limit).toList();
-      }
-      rethrow;
-    }
+  NewsService() : _dio = Dio() {
+    _initPrefs();
   }
 
-  // Get news sources
-  Future<List<NewsSource>> getNewsSources() async {
-    try {
-      final cached = await _getCachedSources();
-      if (cached != null) {
-        return cached;
-      }
-
-      final sources = await _newsService.getNewsSources();
-      await _cacheSources(sources);
-      return sources;
-    } catch (e) {
-      final cached = await _getCachedSources();
-      if (cached != null) {
-        return cached;
-      }
-      rethrow;
-    }
+  Future<void> _initPrefs() async {
+    _prefs = await SharedPreferences.getInstance();
   }
 
-  // Search news with RAG
-  Future<List<NewsArticle>> searchNewsWithRAG(String query) async {
-    try {
-      // First get regular search results
-      final searchResults = await _newsService.searchNews(query, null, null, null, null);
-      
-      // Then enhance with RAG
-      final ragQuery = RAGQuery(
-        query: query,
-        context: searchResults.map((article) => article.content).join('\n'),
-        maxResults: 10,
-      );
-      
-      final ragResponse = await _newsService.queryRAG(ragQuery);
-      
-      // Combine and rank results
-      final enhancedResults = await _enhanceSearchResults(searchResults, ragResponse);
-      
-      return enhancedResults;
-    } catch (e) {
-      // Fallback to regular search
-      return await _newsService.searchNews(query, null, null, null, null);
-    }
-  }
-
-  // Get company news with sentiment analysis
-  Future<List<NewsArticle>> getCompanyNewsWithSentiment(String symbol) async {
-    try {
-      final articles = await _newsService.getCompanyNews(symbol, 50);
-      
-      // Analyze sentiment for each article
-      final enhancedArticles = await Future.wait(
-        articles.map((article) async {
-          try {
-            final sentimentRequest = SentimentRequest(
-              text: article.content,
-              context: 'financial_news',
-            );
-            
-            final sentiment = await _newsService.analyzeSentiment(sentimentRequest);
-            
-            return article.copyWith(
-              sentiment: sentiment.sentiment,
-              sentimentScore: sentiment.score,
-              confidence: sentiment.confidence,
-            );
-          } catch (e) {
-            return article;
-          }
-        }),
-      );
-      
-      return enhancedArticles;
-    } catch (e) {
-      return [];
-    }
-  }
-
-  // Get market sentiment
-  Future<MarketSentiment> getMarketSentiment() async {
-    try {
-      final cached = await _getCachedSentiment();
-      if (cached != null) {
-        return cached;
-      }
-
-      final sentiment = await _newsService.getMarketSentiment();
-      await _cacheSentiment(sentiment);
-      return sentiment;
-    } catch (e) {
-      final cached = await _getCachedSentiment();
-      if (cached != null) {
-        return cached;
-      }
-      rethrow;
-    }
-  }
-
-  // Analyze article sentiment
-  Future<SentimentAnalysis> analyzeArticleSentiment(String content) async {
-    try {
-      final request = SentimentRequest(
-        text: content,
-        context: 'financial_news',
-      );
-      
-      return await _newsService.analyzeSentiment(request);
-    } catch (e) {
-      // Return neutral sentiment as fallback
-      return SentimentAnalysis(
-        sentiment: Sentiment.neutral,
-        score: 0.0,
-        confidence: 0.5,
-        aspects: {},
-      );
-    }
-  }
-
-  // Detect stance in news article
-  Future<StanceDetection> detectArticleStance(String content, String topic) async {
-    try {
-      final request = StanceRequest(
-        text: content,
-        topic: topic,
-        context: 'financial_news',
-      );
-      
-      return await _newsService.detectStance(request);
-    } catch (e) {
-      // Return neutral stance as fallback
-      return StanceDetection(
-        stance: Stance.neutral,
-        confidence: 0.5,
-        reasoning: 'Unable to detect stance',
-      );
-    }
-  }
-
-  // Summarize article
-  Future<NewsSummary> summarizeArticle(String content) async {
-    try {
-      final request = SummaryRequest(
-        content: content,
-        maxLength: 200,
-        includeKeyPoints: true,
-      );
-      
-      return await _newsService.summarizeArticle(request);
-    } catch (e) {
-      // Return basic summary as fallback
-      final words = content.split(' ');
-      final summary = words.take(50).join(' ');
-      
-      return NewsSummary(
-        summary: summary,
-        keyPoints: [],
-        readingTime: (words.length / 200).ceil(),
-        confidence: 0.5,
-      );
-    }
-  }
-
-  // Extract entities from article
-  Future<EntityExtraction> extractArticleEntities(String content) async {
-    try {
-      final request = EntityRequest(
-        text: content,
-        entityTypes: [
-          EntityType.company,
-          EntityType.person,
-          EntityType.location,
-          EntityType.currency,
-          EntityType.number,
-        ],
-      );
-      
-      return await _newsService.extractEntities(request);
-    } catch (e) {
-      return EntityExtraction(
-        entities: [],
-        confidence: 0.0,
-      );
-    }
-  }
-
-  // Classify article
-  Future<NewsClassification> classifyArticle(String content) async {
-    try {
-      final request = ClassificationRequest(
-        content: content,
-        categories: [
-          'earnings',
-          'mergers_acquisitions',
-          'market_movement',
-          'economic_data',
-          'regulatory',
-          'technology',
-          'crypto',
-          'commodities',
-        ],
-      );
-      
-      return await _newsService.classifyArticle(request);
-    } catch (e) {
-      return NewsClassification(
-        category: 'general',
-        confidence: 0.5,
-        subcategories: [],
-      );
-    }
-  }
-
-  // Get trending topics
-  Future<List<TrendingTopic>> getTrendingTopics() async {
-    try {
-      final cached = await _getCachedTrending();
-      if (cached != null) {
-        return cached;
-      }
-
-      final topics = await _newsService.getTrendingTopics();
-      await _cacheTrending(topics);
-      return topics;
-    } catch (e) {
-      final cached = await _getCachedTrending();
-      if (cached != null) {
-        return cached;
-      }
-      rethrow;
-    }
-  }
-
-  // Get breaking news
-  Future<List<NewsArticle>> getBreakingNews() async {
-    try {
-      return await _newsService.getBreakingNews();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  // Get earnings news
-  Future<List<NewsArticle>> getEarningsNews() async {
-    try {
-      return await _newsService.getEarningsNews();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  // Get economic calendar
-  Future<List<EconomicEvent>> getEconomicCalendar() async {
-    try {
-      return await _newsService.getEconomicCalendar();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  // Get personalized news recommendations
-  Future<List<NewsArticle>> getPersonalizedNews({
-    required String userId,
-    List<String>? interests,
-    List<String>? watchlist,
-    int limit = 20,
-  }) async {
-    try {
-      final request = RecommendationRequest(
-        userId: userId,
-        interests: interests ?? [],
-        watchlist: watchlist ?? [],
-        limit: limit,
-        includeSentiment: true,
-        includeStance: true,
-      );
-      
-      return await _newsService.getPersonalizedNews(request);
-    } catch (e) {
-      // Fallback to general headlines
-      return await getHeadlines(limit: limit);
-    }
-  }
-
-  // Create news alert
-  Future<NewsAlert?> createNewsAlert({
-    required String userId,
-    required String query,
-    required List<String> sources,
-    required AlertFrequency frequency,
-  }) async {
-    try {
-      final request = NewsAlertRequest(
-        userId: userId,
-        query: query,
-        sources: sources,
-        frequency: frequency,
-        active: true,
-      );
-      
-      return await _newsService.createNewsAlert(request);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Get user alerts
-  Future<List<NewsAlert>> getUserAlerts(String userId) async {
-    try {
-      return await _newsService.getUserAlerts(userId);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  // Delete news alert
-  Future<bool> deleteNewsAlert(String alertId) async {
-    try {
-      await _newsService.deleteNewsAlert(alertId);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // Check network connectivity
-  Future<bool> isConnected() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    return connectivityResult != ConnectivityResult.none;
-  }
-
-  // Helper method to enhance search results with RAG
-  Future<List<NewsArticle>> _enhanceSearchResults(
-    List<NewsArticle> articles,
-    RAGResponse ragResponse,
-  ) async {
-    // Combine regular search results with RAG insights
-    final enhancedArticles = <NewsArticle>[];
+  // Mock data for development
+  Future<List<NewsArticle>> getTopNews() async {
+    await Future.delayed(Duration(milliseconds: 500)); // Simulate network delay
     
-    for (final article in articles) {
-      // Find relevant RAG insights
-      final relevantInsights = ragResponse.insights
-          .where((insight) => insight.relevance > 0.7)
-          .toList();
-      
-      if (relevantInsights.isNotEmpty) {
-        // Enhance article with RAG insights
-        final enhancedArticle = article.copyWith(
-          ragInsights: relevantInsights,
-          relevanceScore: relevantInsights
-              .map((insight) => insight.relevance)
-              .reduce((a, b) => a + b) / relevantInsights.length,
-        );
-        
-        enhancedArticles.add(enhancedArticle);
-      } else {
-        enhancedArticles.add(article);
-      }
-    }
+    return [
+      NewsArticle(
+        id: '1',
+        title: 'Tech Stocks Rally on Strong Earnings',
+        summary: 'Major technology companies report better-than-expected quarterly results',
+        content: 'Technology stocks surged today as several major companies reported strong quarterly earnings...',
+        source: 'Financial Times',
+        url: 'https://example.com/article1',
+        publishedAt: DateTime.now().subtract(Duration(hours: 2)),
+        lastUpdated: DateTime.now().subtract(Duration(hours: 1)),
+        sentiment: 0.8,
+        confidence: 0.9,
+        mentionedStocks: ['AAPL', 'GOOGL', 'MSFT'],
+        mentionedCryptos: [],
+        tags: ['earnings', 'technology', 'stocks'],
+        categories: ['markets', 'technology'],
+        entities: ['Apple Inc', 'Google', 'Microsoft'],
+        sentimentAnalysis: [],
+        stanceAnalysis: [],
+        sourceAnalysis: [],
+        relatedArticles: [],
+        embeddings: [],
+        isRead: false,
+        readAt: null,
+        readCount: 0,
+        relevanceScore: 0.9,
+        userTags: [],
+        isBookmarked: false,
+        bookmarkedAt: null,
+      ),
+      NewsArticle(
+        id: '2',
+        title: 'Federal Reserve Signals Potential Rate Cuts',
+        summary: 'Central bank officials hint at possible monetary policy easing',
+        content: 'Federal Reserve officials indicated today that they may consider cutting interest rates...',
+        source: 'Wall Street Journal',
+        url: 'https://example.com/article2',
+        publishedAt: DateTime.now().subtract(Duration(hours: 4)),
+        lastUpdated: DateTime.now().subtract(Duration(hours: 3)),
+        sentiment: 0.6,
+        confidence: 0.85,
+        mentionedStocks: [],
+        mentionedCryptos: ['BTC', 'ETH'],
+        tags: ['federal reserve', 'interest rates', 'monetary policy'],
+        categories: ['economics', 'policy'],
+        entities: ['Federal Reserve', 'Jerome Powell'],
+        sentimentAnalysis: [],
+        stanceAnalysis: [],
+        sourceAnalysis: [],
+        relatedArticles: [],
+        embeddings: [],
+        isRead: false,
+        readAt: null,
+        readCount: 0,
+        relevanceScore: 0.8,
+        userTags: [],
+        isBookmarked: false,
+        bookmarkedAt: null,
+      ),
+    ];
+  }
+
+  Future<List<NewsTrend>> getNewsTrends() async {
+    await Future.delayed(Duration(milliseconds: 300));
     
-    // Sort by relevance score
-    enhancedArticles.sort((a, b) => (b.relevanceScore ?? 0).compareTo(a.relevanceScore ?? 0));
+    return [
+      NewsTrend(
+        topic: 'AI and Machine Learning',
+        volume: 85.5,
+        volumeChange: 12.3,
+        sentiment: 0.7,
+        sentimentChange: 0.1,
+        topArticles: ['1', '2', '3'],
+        relatedTopics: ['Technology', 'Innovation', 'Investment'],
+        startDate: DateTime.now().subtract(Duration(days: 7)),
+        endDate: DateTime.now(),
+      ),
+      NewsTrend(
+        topic: 'Cryptocurrency Regulation',
+        volume: 72.1,
+        volumeChange: -5.2,
+        sentiment: 0.4,
+        sentimentChange: -0.2,
+        topArticles: ['4', '5', '6'],
+        relatedTopics: ['Regulation', 'Crypto', 'Policy'],
+        startDate: DateTime.now().subtract(Duration(days: 7)),
+        endDate: DateTime.now(),
+      ),
+    ];
+  }
+
+  Future<List<NewsArticle>> searchNews(String query) async {
+    await Future.delayed(Duration(milliseconds: 400));
     
-    return enhancedArticles;
+    // Simple mock search implementation
+    final allNews = await getTopNews();
+    return allNews.where((article) => 
+      article.title.toLowerCase().contains(query.toLowerCase()) ||
+      article.content.toLowerCase().contains(query.toLowerCase())
+    ).toList();
   }
 
-  // Cache management
-  Future<void> _cacheHeadlines(List<NewsArticle> headlines, String? category, String? source) async {
-    final now = DateTime.now();
-    final cacheKey = '${_headlinesCacheKey}_${category ?? 'all'}_${source ?? 'all'}';
-    final cacheData = {
-      'timestamp': now.millisecondsSinceEpoch,
-      'data': headlines.map((h) => h.toJson()).toList(),
-    };
-    await _prefs.setString(cacheKey, jsonEncode(cacheData));
+  Future<NewsSummary?> getNewsSummary(String query) async {
+    await Future.delayed(Duration(milliseconds: 600));
+    
+    return NewsSummary(
+      id: 'summary_1',
+      title: 'Summary for: $query',
+      summary: 'This is a comprehensive summary of news related to $query...',
+      keyPoints: [
+        'Key point 1 about $query',
+        'Key point 2 about $query',
+        'Key point 3 about $query',
+      ],
+      mentionedAssets: ['AAPL', 'GOOGL'],
+      overallSentiment: 0.7,
+      sources: ['Financial Times', 'Wall Street Journal'],
+      generatedAt: DateTime.now(),
+      model: 'GPT-4',
+      confidence: 0.85,
+    );
   }
 
-  Future<List<NewsArticle>?> _getCachedHeadlines(String? category, String? source) async {
-    final cacheKey = '${_headlinesCacheKey}_${category ?? 'all'}_${source ?? 'all'}';
-    final cached = _prefs.getString(cacheKey);
-    if (cached == null) return null;
-
-    try {
-      final data = jsonDecode(cached) as Map<String, dynamic>;
-      final timestamp = data['timestamp'] as int;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      
-      // Check if cache is still valid (10 minutes)
-      if (now - timestamp > 10 * 60 * 1000) return null;
-      
-      final headlinesList = data['data'] as List;
-      return headlinesList.map((json) => NewsArticle.fromJson(json)).toList();
-    } catch (e) {
-      return null;
-    }
+  Future<List<NewsArticle>> getNewsBySymbol(String symbol) async {
+    await Future.delayed(Duration(milliseconds: 500));
+    
+    final allNews = await getTopNews();
+    return allNews.where((article) => 
+      article.mentionedStocks.contains(symbol.toUpperCase()) ||
+      article.mentionedCryptos.contains(symbol.toUpperCase())
+    ).toList();
   }
 
-  Future<void> _cacheSources(List<NewsSource> sources) async {
-    final now = DateTime.now();
-    final cacheData = {
-      'timestamp': now.millisecondsSinceEpoch,
-      'data': sources.map((s) => s.toJson()).toList(),
-    };
-    await _prefs.setString(_sourcesCacheKey, jsonEncode(cacheData));
+  // Additional methods for enhanced news features
+  Future<List<fnm.EconomicEvent>> getEconomicCalendar() async {
+    await Future.delayed(Duration(milliseconds: 400));
+    
+    return [
+      fnm.EconomicEvent(
+        id: 'event_1',
+        title: 'US Non-Farm Payrolls',
+        description: 'Employment data for the previous month',
+        date: DateTime.now().add(Duration(days: 3)),
+        country: 'United States',
+        currency: 'USD',
+        impact: 'High',
+        previousValue: 175000,
+        forecastValue: 180000,
+        actualValue: null,
+        unit: 'jobs',
+        affectedAssets: ['USD', 'SPY', 'QQQ'],
+        isHighImpact: true,
+        source: 'Bureau of Labor Statistics',
+      ),
+    ];
   }
 
-  Future<List<NewsSource>?> _getCachedSources() async {
-    final cached = _prefs.getString(_sourcesCacheKey);
-    if (cached == null) return null;
-
-    try {
-      final data = jsonDecode(cached) as Map<String, dynamic>;
-      final timestamp = data['timestamp'] as int;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      
-      // Check if cache is still valid (1 hour)
-      if (now - timestamp > 60 * 60 * 1000) return null;
-      
-      final sourcesList = data['data'] as List;
-      return sourcesList.map((json) => NewsSource.fromJson(json)).toList();
-    } catch (e) {
-      return null;
-    }
+  Future<List<fnm.EarningsCall>> getEarningsCalls() async {
+    await Future.delayed(Duration(milliseconds: 400));
+    
+    return [
+      fnm.EarningsCall(
+        id: 'earnings_1',
+        symbol: 'AAPL',
+        companyName: 'Apple Inc.',
+        callDate: DateTime.now().add(Duration(days: 5)),
+        earningsDate: DateTime.now().add(Duration(days: 4)),
+        quarter: 'Q1',
+        year: 2024,
+        epsForecast: 2.10,
+        revenueForecast: 118000000000,
+        epsActual: null,
+        revenueActual: null,
+        callUrl: 'https://example.com/earnings-call',
+        transcriptUrl: 'https://example.com/transcript',
+        keyTopics: ['iPhone sales', 'Services growth', 'China market'],
+        sentimentScores: {'overall': 0.7, 'revenue': 0.8, 'guidance': 0.6},
+        participants: ['Tim Cook', 'Luca Maestri'],
+        isCompleted: false,
+        status: 'Scheduled',
+      ),
+    ];
   }
 
-  Future<void> _cacheSentiment(MarketSentiment sentiment) async {
-    final now = DateTime.now();
-    final cacheData = {
-      'timestamp': now.millisecondsSinceEpoch,
-      'data': sentiment.toJson(),
-    };
-    await _prefs.setString(_sentimentCacheKey, jsonEncode(cacheData));
+  Future<List<fnm.KeyFigure>> getKeyFigures() async {
+    await Future.delayed(Duration(milliseconds: 400));
+    
+    return [
+      fnm.KeyFigure(
+        id: 'figure_1',
+        name: 'Warren Buffett',
+        title: 'CEO',
+        company: 'Berkshire Hathaway',
+        photoUrl: 'https://example.com/buffett.jpg',
+        recentActions: ['Increased stake in Apple', 'Sold airline stocks'],
+        holdings: ['AAPL', 'BRK.A', 'KO'],
+        netWorth: 100000000000,
+        source: 'Forbes',
+        lastUpdated: DateTime.now().subtract(Duration(days: 1)),
+        relatedNews: ['1', '2'],
+      ),
+    ];
   }
 
-  Future<MarketSentiment?> _getCachedSentiment() async {
-    final cached = _prefs.getString(_sentimentCacheKey);
-    if (cached == null) return null;
-
-    try {
-      final data = jsonDecode(cached) as Map<String, dynamic>;
-      final timestamp = data['timestamp'] as int;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      
-      // Check if cache is still valid (30 minutes)
-      if (now - timestamp > 30 * 60 * 1000) return null;
-      
-      final sentimentData = data['data'] as Map<String, dynamic>;
-      return MarketSentiment.fromJson(sentimentData);
-    } catch (e) {
-      return null;
-    }
+  Future<List<fnm.TrendingTopic>> getTrendingTopics() async {
+    await Future.delayed(Duration(milliseconds: 300));
+    
+    return [
+      fnm.TrendingTopic(
+        id: 'trend_1',
+        topic: 'Artificial Intelligence',
+        volume: 95.2,
+        volumeChange: 15.7,
+        sentiment: 0.8,
+        sentimentChange: 0.2,
+        relatedSymbols: ['NVDA', 'GOOGL', 'MSFT'],
+        topArticles: ['1', '2', '3'],
+        startDate: DateTime.now().subtract(Duration(days: 1)),
+        endDate: DateTime.now(),
+      ),
+    ];
   }
 
-  Future<void> _cacheTrending(List<TrendingTopic> topics) async {
-    final now = DateTime.now();
-    final cacheData = {
-      'timestamp': now.millisecondsSinceEpoch,
-      'data': topics.map((t) => t.toJson()).toList(),
-    };
-    await _prefs.setString(_trendingCacheKey, jsonEncode(cacheData));
-  }
-
-  Future<List<TrendingTopic>?> _getCachedTrending() async {
-    final cached = _prefs.getString(_trendingCacheKey);
-    if (cached == null) return null;
-
-    try {
-      final data = jsonDecode(cached) as Map<String, dynamic>;
-      final timestamp = data['timestamp'] as int;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      
-      // Check if cache is still valid (15 minutes)
-      if (now - timestamp > 15 * 60 * 1000) return null;
-      
-      final topicsList = data['data'] as List;
-      return topicsList.map((json) => TrendingTopic.fromJson(json)).toList();
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Clear cache
-  Future<void> clearCache() async {
-    final keys = _prefs.getKeys();
-    for (final key in keys) {
-      if (key.startsWith(_headlinesCacheKey) ||
-          key.startsWith(_sourcesCacheKey) ||
-          key.startsWith(_sentimentCacheKey) ||
-          key.startsWith(_trendingCacheKey)) {
-        await _prefs.remove(key);
-      }
-    }
-  }
-
-  // Refresh data
-  Future<void> refreshData() async {
-    await clearCache();
-    await getHeadlines();
-    await getNewsSources();
-    await getMarketSentiment();
-    await getTrendingTopics();
+  Future<fnm.MarketSentiment> getMarketSentiment() async {
+    await Future.delayed(Duration(milliseconds: 400));
+    
+    return fnm.MarketSentiment(
+      id: 'sentiment_1',
+      date: DateTime.now(),
+      overallSentiment: 0.65,
+      sectorSentiment: {
+        'Technology': 0.8,
+        'Healthcare': 0.6,
+        'Finance': 0.5,
+      },
+      assetClassSentiment: {
+        'Stocks': 0.7,
+        'Bonds': 0.4,
+        'Crypto': 0.6,
+      },
+      topPositiveTopics: ['Earnings beats', 'Fed dovish signals'],
+      topNegativeTopics: ['Inflation concerns', 'Geopolitical tensions'],
+      fearGreedIndex: 65.0,
+      volatilityIndex: 18.5,
+      trendingTopics: ['AI', 'Rate cuts', 'Earnings'],
+    );
   }
 } 

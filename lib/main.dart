@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import 'constants/theme_constants.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/market_screen.dart';
+
 import 'screens/portfolio_screen.dart';
 import 'screens/news_screen.dart';
-import 'screens/analysis_screen.dart';
+
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/ticker_input_screen.dart';
+import 'screens/universal_analysis_screen.dart';
 
 void main() {
   runApp(
@@ -47,10 +49,7 @@ final _router = GoRouter(
           path: '/',
           builder: (context, state) => const DashboardScreen(),
         ),
-        GoRoute(
-          path: '/market',
-          builder: (context, state) => const MarketScreen(),
-        ),
+
         GoRoute(
           path: '/portfolio',
           builder: (context, state) => const PortfolioScreen(),
@@ -61,7 +60,13 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/analysis',
-          builder: (context, state) => const AnalysisScreen(),
+          builder: (context, state) => const TickerInputScreen(),
+        ),
+        GoRoute(
+          path: '/analysis/:ticker',
+          builder: (context, state) => UniversalAnalysisScreen(
+            ticker: state.pathParameters['ticker']!,
+          ),
         ),
         GoRoute(
           path: '/profile',
@@ -97,11 +102,7 @@ class _ScaffoldWithNavigationState extends State<ScaffoldWithNavigation> {
       label: 'Dashboard',
       route: '/',
     ),
-    NavigationItem(
-      icon: Icons.trending_up,
-      label: 'Market',
-      route: '/market',
-    ),
+
     NavigationItem(
       icon: Icons.account_balance_wallet,
       label: 'Portfolio',

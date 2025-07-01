@@ -51,9 +51,7 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Market Overview Card
-              _buildMarketOverviewCard(theme),
-              const SizedBox(height: 16),
+
 
               // Quick Actions
               Text(
@@ -82,108 +80,15 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMarketOverviewCard(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.primary.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Market Overview',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Icon(
-                Icons.trending_up,
-                color: Colors.white,
-                size: 24,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildMarketIndex(theme, 'S&P 500', '4,567.89', '+1.2%', true),
-              _buildMarketIndex(theme, 'NASDAQ', '14,234.56', '+0.8%', true),
-              _buildMarketIndex(theme, 'DOW', '35,678.90', '-0.3%', false),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildMarketIndex(ThemeData theme, String name, String value, String change, bool isPositive) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          name,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: Colors.white.withOpacity(0.8),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          children: [
-            Icon(
-              isPositive ? Icons.trending_up : Icons.trending_down,
-              color: isPositive ? Colors.green[300] : Colors.red[300],
-              size: 12,
-            ),
-            const SizedBox(width: 2),
-            Text(
-              change,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: isPositive ? Colors.green[300] : Colors.red[300],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 
   Widget _buildQuickActionsGrid(ThemeData theme, BuildContext context) {
     final actions = [
       QuickAction(
-        icon: Icons.trending_up,
-        title: 'Market',
-        color: Colors.blue,
-        onTap: () => context.go('/market'),
+        icon: Icons.analytics,
+        title: 'Analysis',
+        color: Colors.purple,
+        onTap: () => context.go('/analysis'),
       ),
       QuickAction(
         icon: Icons.account_balance_wallet,
@@ -198,10 +103,10 @@ class DashboardScreen extends StatelessWidget {
         onTap: () => context.go('/news'),
       ),
       QuickAction(
-        icon: Icons.analytics,
-        title: 'Analysis',
-        color: Colors.purple,
-        onTap: () => context.go('/analysis'),
+        icon: Icons.person,
+        title: 'Profile',
+        color: Colors.blue,
+        onTap: () => context.go('/profile'),
       ),
     ];
 

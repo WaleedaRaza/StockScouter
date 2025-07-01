@@ -1,3 +1,7 @@
+// Crypto card widget temporarily disabled due to missing crypto model
+// This widget will be reimplemented when the proper crypto model is available
+
+/*
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -199,71 +203,98 @@ class CryptoCard extends StatelessWidget {
                   ),
               ],
             ),
-            // Additional Info Row
-            if (crypto.volume != null || crypto.circulatingSupply != null || crypto.maxSupply != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
+            const SizedBox(height: 16),
+            // Volume Row
+            if (crypto.volume != null)
+              Row(
+                children: [
+                  Text(
+                    'Volume (24h): ',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(
+                    _formatVolume(crypto.volume!),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (crypto.circulatingSupply != null)
+                    Text(
+                      'Circulating: ${_formatSupply(crypto.circulatingSupply!)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            // Chart Section
+            if (showChart && crypto.priceHistory != null && crypto.priceHistory!.isNotEmpty)
+              Container(
+                height: 120,
+                margin: const EdgeInsets.only(top: 16),
+                child: _buildPriceChart(crypto.priceHistory!),
+              ),
+            // Additional Info
+            if (crypto.allTimeHigh != null || crypto.allTimeLow != null)
+              Container(
+                margin: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: Row(
                   children: [
-                    if (crypto.volume != null) ...[
-                      _buildInfoChip(
-                        theme,
-                        'Vol: ${_formatVolume(crypto.volume!)}',
-                        Icons.bar_chart,
+                    if (crypto.allTimeHigh != null) ...[
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'All Time High',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '\$${crypto.allTimeHigh!.toStringAsFixed(2)}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 8),
                     ],
-                    if (crypto.circulatingSupply != null) ...[
-                      _buildInfoChip(
-                        theme,
-                        'Circ: ${_formatSupply(crypto.circulatingSupply!)}',
-                        Icons.token,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (crypto.maxSupply != null) ...[
-                      _buildInfoChip(
-                        theme,
-                        'Max: ${_formatSupply(crypto.maxSupply!)}',
-                        Icons.all_inclusive,
+                    if (crypto.allTimeLow != null) ...[
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'All Time Low',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '\$${crypto.allTimeLow!.toStringAsFixed(2)}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ],
-                ),
-              ),
-            // 24h High/Low
-            if (crypto.high24h != null || crypto.low24h != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  children: [
-                    if (crypto.high24h != null) ...[
-                      _buildInfoChip(
-                        theme,
-                        '24h High: \$${crypto.high24h!.toStringAsFixed(2)}',
-                        Icons.trending_up,
-                        color: Colors.green,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (crypto.low24h != null) ...[
-                      _buildInfoChip(
-                        theme,
-                        '24h Low: \$${crypto.low24h!.toStringAsFixed(2)}',
-                        Icons.trending_down,
-                        color: Colors.red,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            // Mini Chart
-            if (showChart && crypto.priceHistory.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: SizedBox(
-                  height: 60,
-                  child: _buildMiniChart(theme, crypto.priceHistory),
                 ),
               ),
           ],
@@ -272,36 +303,8 @@ class CryptoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip(ThemeData theme, String label, IconData icon, {Color? color}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: (color ?? theme.colorScheme.surfaceVariant).withOpacity(0.3),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 12,
-            color: color ?? theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: color ?? theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniChart(ThemeData theme, List<PricePoint> priceHistory) {
-    if (priceHistory.isEmpty) return const SizedBox.shrink();
+  Widget _buildPriceChart(List<PricePoint> priceHistory) {
+    if (priceHistory.isEmpty) return Container();
 
     final prices = priceHistory.map((point) => point.price).toList();
     final minPrice = prices.reduce((a, b) => a < b ? a : b);
@@ -309,13 +312,12 @@ class CryptoCard extends StatelessWidget {
     final priceRange = maxPrice - minPrice;
 
     return CustomPaint(
-      size: const Size(double.infinity, 60),
-      painter: _CryptoChartPainter(
+      size: const Size(double.infinity, 120),
+      painter: _PriceChartPainter(
         prices: prices,
         minPrice: minPrice,
+        maxPrice: maxPrice,
         priceRange: priceRange,
-        color: theme.colorScheme.secondary,
-        isPositive: priceHistory.last.price >= priceHistory.first.price,
       ),
     );
   }
@@ -334,13 +336,11 @@ class CryptoCard extends StatelessWidget {
 
   String _formatVolume(double volume) {
     if (volume >= 1e9) {
-      return '${(volume / 1e9).toStringAsFixed(2)}B';
+      return '\$${(volume / 1e9).toStringAsFixed(2)}B';
     } else if (volume >= 1e6) {
-      return '${(volume / 1e6).toStringAsFixed(2)}M';
-    } else if (volume >= 1e3) {
-      return '${(volume / 1e3).toStringAsFixed(2)}K';
+      return '\$${(volume / 1e6).toStringAsFixed(2)}M';
     } else {
-      return volume.toStringAsFixed(0);
+      return '\$${volume.toStringAsFixed(0)}';
     }
   }
 
@@ -349,27 +349,23 @@ class CryptoCard extends StatelessWidget {
       return '${(supply / 1e9).toStringAsFixed(2)}B';
     } else if (supply >= 1e6) {
       return '${(supply / 1e6).toStringAsFixed(2)}M';
-    } else if (supply >= 1e3) {
-      return '${(supply / 1e3).toStringAsFixed(2)}K';
     } else {
       return supply.toStringAsFixed(0);
     }
   }
 }
 
-class _CryptoChartPainter extends CustomPainter {
+class _PriceChartPainter extends CustomPainter {
   final List<double> prices;
   final double minPrice;
+  final double maxPrice;
   final double priceRange;
-  final Color color;
-  final bool isPositive;
 
-  _CryptoChartPainter({
+  _PriceChartPainter({
     required this.prices,
     required this.minPrice,
+    required this.maxPrice,
     required this.priceRange,
-    required this.color,
-    required this.isPositive,
   });
 
   @override
@@ -377,41 +373,31 @@ class _CryptoChartPainter extends CustomPainter {
     if (prices.isEmpty) return;
 
     final paint = Paint()
-      ..color = isPositive ? Colors.green : Colors.red
-      ..strokeWidth = 2.0
+      ..color = Colors.blue
+      ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
-    final fillPaint = Paint()
-      ..color = (isPositive ? Colors.green : Colors.red).withOpacity(0.1)
-      ..style = PaintingStyle.fill;
-
     final path = Path();
-    final fillPath = Path();
-
-    final stepX = size.width / (prices.length - 1);
-    final stepY = size.height / priceRange;
+    final width = size.width;
+    final height = size.height;
+    final stepX = width / (prices.length - 1);
 
     for (int i = 0; i < prices.length; i++) {
       final x = i * stepX;
-      final y = size.height - ((prices[i] - minPrice) * stepY);
+      final normalizedPrice = priceRange > 0 ? (prices[i] - minPrice) / priceRange : 0.5;
+      final y = height - (normalizedPrice * height);
 
       if (i == 0) {
         path.moveTo(x, y);
-        fillPath.moveTo(x, size.height);
-        fillPath.lineTo(x, y);
       } else {
         path.lineTo(x, y);
-        fillPath.lineTo(x, y);
       }
     }
 
-    fillPath.lineTo(size.width, size.height);
-    fillPath.close();
-
-    canvas.drawPath(fillPath, fillPaint);
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-} 
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+*/ 
