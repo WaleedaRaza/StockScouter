@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/theme_constants.dart';
+import '../constants/feature_flags.dart';
 import '../models/news_model.dart';
 import '../models/financial_news_models.dart';
+import '../models/analytics_models.dart';
 import '../providers/app_providers.dart';
+import '../providers/analytics_provider.dart';
 import '../widgets/loading_widget.dart';
 import '../widgets/error_widget.dart';
+import '../widgets/enhanced_news_card.dart';
 
 class NewsScreen extends ConsumerStatefulWidget {
   const NewsScreen({super.key});
@@ -17,6 +21,7 @@ class NewsScreen extends ConsumerStatefulWidget {
 class _NewsScreenState extends ConsumerState<NewsScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   int _currentTabIndex = 0;
+  bool _showDetailedAnalytics = false;
 
   @override
   void initState() {
@@ -52,6 +57,17 @@ class _NewsScreenState extends ConsumerState<NewsScreen> with TickerProviderStat
         backgroundColor: AppColors.surface,
         elevation: 0,
         actions: [
+          if (FeatureFlagHelper.isFeatureEnabled('enhanced_sentiment'))
+            IconButton(
+              icon: Icon(
+                _showDetailedAnalytics ? Icons.analytics : Icons.analytics_outlined,
+                color: AppColors.primary,
+              ),
+              onPressed: () => setState(() {
+                _showDetailedAnalytics = !_showDetailedAnalytics;
+              }),
+              tooltip: 'Toggle Analytics',
+            ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.primary),
             onPressed: () => _refreshCurrentTab(),
@@ -110,7 +126,12 @@ class _NewsScreenState extends ConsumerState<NewsScreen> with TickerProviderStat
                       itemCount: newsState.articles?.length ?? 0,
                       itemBuilder: (context, index) {
                         final article = newsState.articles![index];
-                        return _buildNewsCard(article);
+                        return FeatureFlagHelper.isFeatureEnabled('enhanced_sentiment')
+                            ? EnhancedNewsCard(
+                                article: article,
+                                showDetailedAnalytics: _showDetailedAnalytics,
+                              )
+                            : _buildNewsCard(article);
                       },
                     ),
     );
@@ -288,6 +309,8 @@ class _NewsScreenState extends ConsumerState<NewsScreen> with TickerProviderStat
                         size: 16,
                       ),
                     ),
+                  if (FeatureFlagHelper.isFeatureEnabled('analytics_foundation'))
+                    _buildAnalyticsIndicator(article),
                 ],
               ),
               const SizedBox(height: 8),
@@ -1006,6 +1029,83 @@ class _NewsScreenState extends ConsumerState<NewsScreen> with TickerProviderStat
     // Implement trending topic detail view
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Opening: ${topic.topic}')),
+    );
+  }
+
+  Widget _buildAnalyticsIndicator(NewsArticle article) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final analyticsAsync = ref.watch(sentimentAnalysisProvider(article));
+        
+        return analyticsAsync.when(
+          data: (analytics) {
+            final confidence = analytics.confidence;
+            final confidenceColor = confidence > 0.8 
+                ? Colors.green 
+                : confidence > 0.6 
+                    ? Colors.orange 
+                    : Colors.red;
+            
+            return Container(
+              margin: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: confidenceColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: confidenceColor.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.analytics,
+                    size: 12,
+                    color: confidenceColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${(confidence * 100).toInt()}%',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: confidenceColor,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+          loading: () => Container(
+            margin: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+          error: (error, stack) => Container(
+            margin: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.error_outline,
+              size: 12,
+              color: Colors.red,
+            ),
+          ),
+        );
+      },
     );
   }
 } 
