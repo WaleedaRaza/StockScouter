@@ -230,9 +230,8 @@ AI/ML Layer:
 - **TradingView** for charting inspiration
 
 
+**⭐ Star this repository if you find it helpful!**
 
----
+**🔄 Fork and contribute to make it even better!**
 
-**Made with ❤️ by [Waleed Raza](https://github.com/WaleedaRaza)**
-
-*StockScouter - Where AI meets institutional-grade trading intelligence*
+**📧 Contact for collaboration opportunities!**
