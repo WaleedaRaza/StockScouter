@@ -130,102 +130,51 @@ AI/ML Layer:
 - MongoDB 7.0+ / Redis 7.0+
 - TensorFlow 2.15+ / SciKit-Learn 1.3+
 
-### **Installation & Setup**
+### **System Architecture & Deployment**
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/WaleedaRaza/StockScouter.git
-   cd StockScouter
-   ```
+1. **Multi-Stack Environment Setup**
+   - **Backend Services**: Python ML services, Node.js API gateway, Golang high-performance services
+   - **Database Layer**: MongoDB for document storage, Redis for caching, PostgreSQL for relational data
+   - **Frontend Applications**: React web app with Material-UI, Flutter mobile app with native performance
+   - **AI/ML Infrastructure**: TensorFlow serving, model versioning with MLflow, real-time inference
 
-2. **Backend Setup**
-   ```bash
-   # Install Python dependencies
-   cd backend
-   pip install -r requirements.txt
-   
-   # Install Node.js dependencies
-   cd ../api
-   npm install
-   
-   # Setup MongoDB and Redis
-   docker-compose up -d
-   ```
+2. **Cloud Infrastructure Configuration**
+   - **Container Orchestration**: Kubernetes clusters with auto-scaling and load balancing
+   - **Data Pipeline**: Apache Airflow for ETL processes, Apache Kafka for real-time streaming
+   - **Monitoring Stack**: Prometheus metrics collection, Grafana dashboards, ELK log aggregation
+   - **Security Layer**: AWS WAF, DDoS protection, encrypted data transmission
 
-3. **Frontend Setup**
-   ```bash
-   # Install Flutter dependencies
-   cd ../mobile
-   flutter pub get
-   
-   # Install React dependencies
-   cd ../web
-   npm install
-   ```
+3. **API Integration & Configuration**
+   - **Financial Data APIs**: Alpha Vantage, Yahoo Finance, Finnhub, IEX Cloud, Polygon.io
+   - **News & Sentiment Sources**: Google News, Reddit, Twitter, Bloomberg, Reuters
+   - **Options & Derivatives**: CBOE, OCC, Market Chameleon, Barchart
+   - **Alternative Data**: RavenPack, EarningsWhisper, StockTwits, TipRanks
 
-4. **Configure API Keys**
-   ```bash
-   # Copy environment template
-   cp .env.example .env
-   
-   # Add your API keys:
-   # - Alpha Vantage API Key
-   # - Yahoo Finance API Key
-   # - Reddit API Credentials
-   # - Twitter API Credentials
-   # - OpenAI API Key (for GPT-4)
-   # - MongoDB Connection String
-   # - Redis Connection String
-   ```
-
-5. **Start the Application**
-   ```bash
-   # Start backend services
-   cd backend && python main.py
-   cd ../api && npm start
-   
-   # Start Flutter app
-   cd ../mobile && flutter run
-   
-   # Start React web app
-   cd ../web && npm start
-   ```
+4. **Development & Production Environments**
+   - **Development**: Local Docker containers with hot-reload and debugging tools
+   - **Staging**: Full production-like environment with test data and monitoring
+   - **Production**: Multi-region deployment with 99.99% uptime SLA
+   - **CI/CD Pipeline**: Automated testing, security scanning, and deployment
 
 ## 📱 **Application Architecture**
 
-### **Mobile Application (Flutter)**
-```
-lib/
-├── constants/          # App constants and API keys
-├── models/            # Data models and entities
-├── providers/         # Riverpod state management
-├── screens/           # UI screens and pages
-├── services/          # Business logic and API services
-├── utils/             # Utility functions
-└── widgets/           # Reusable UI components
-```
+### **Frontend Layer Architecture**
+- **React Web Application**: Material-UI components with real-time charts and interactive dashboards
+- **Flutter Mobile Application**: Cross-platform iOS/Android with native performance and offline capabilities
+- **State Management**: Riverpod for Flutter, Redux/Zustand for React with real-time synchronization
+- **UI/UX Design**: Responsive design system with dark/light themes and accessibility compliance
 
-### **Web Application (React)**
-```
-src/
-├── components/        # Reusable UI components
-├── pages/            # Application pages
-├── services/          # API services and data fetching
-├── hooks/            # Custom React hooks
-├── utils/            # Utility functions
-├── styles/           # Styling and themes
-└── store/            # State management (Redux/Zustand)
-```
+### **Backend Service Architecture**
+- **API Gateway**: Node.js/Express.js with rate limiting and authentication middleware
+- **ML Services**: Python microservices for AI/ML model serving and real-time inference
+- **Data Services**: Golang high-performance services for data aggregation and processing
+- **Authentication**: Supabase integration with biometric authentication and secure token management
 
-### **Backend Services**
-```
-backend/
-├── ml_services/      # Machine learning models
-├── data_services/    # Data aggregation and processing
-├── api_services/     # External API integrations
-├── sentiment/        # NLP and sentiment analysis
-└── models/           # Data models and schemas
-```
+### **Data Layer Architecture**
+- **Primary Database**: MongoDB for flexible document storage and real-time queries
+- **Caching Layer**: Redis clusters for session management and high-frequency data caching
+- **Relational Data**: PostgreSQL for structured data with read replicas for scalability
+- **File Storage**: AWS S3 for historical data, model artifacts, and static assets
 
 ## 🔧 **Advanced Technical Features**
 
@@ -399,92 +348,29 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **React Team** for the powerful web framework
 - **TradingView** for charting inspiration
 
-## 📚 **API Documentation**
+## 📚 **API Architecture & Integration**
 
-### **REST API Endpoints**
+### **RESTful API Design**
+- **Market Data Endpoints**: Real-time quotes, historical data, and technical indicators
+- **Technical Analysis APIs**: Elliott Wave, Fibonacci, supply/demand zone analysis
+- **AI/ML Prediction Services**: Price forecasting, risk assessment, sentiment analysis
+- **User Management**: Authentication, portfolio tracking, and watchlist management
+- **Rate Limiting**: Intelligent API throttling with exponential backoff
+- **Caching Strategy**: Multi-layer caching with Redis and CDN optimization
 
-#### **Market Data**
-```http
-GET /api/v1/stocks/{symbol}/quote
-GET /api/v1/stocks/{symbol}/historical
-GET /api/v1/stocks/{symbol}/technical-indicators
-GET /api/v1/stocks/{symbol}/sentiment
-GET /api/v1/stocks/{symbol}/options-chain
-```
+### **Real-time Data Architecture**
+- **WebSocket Connections**: Persistent connections for live market data streaming
+- **Event-Driven Architecture**: Real-time event processing with Apache Kafka
+- **Data Stream Processing**: Real-time sentiment and news analysis pipelines
+- **Low Latency**: Sub-50ms response times for critical market data
+- **Scalable Infrastructure**: Auto-scaling WebSocket servers for high concurrency
 
-#### **Technical Analysis**
-```http
-GET /api/v1/analysis/elliott-wave/{symbol}
-GET /api/v1/analysis/fibonacci/{symbol}
-GET /api/v1/analysis/supply-demand/{symbol}
-GET /api/v1/analysis/patterns/{symbol}
-```
-
-#### **AI & ML Predictions**
-```http
-POST /api/v1/predictions/price-forecast
-POST /api/v1/predictions/risk-assessment
-POST /api/v1/predictions/sentiment-analysis
-POST /api/v1/predictions/pattern-detection
-```
-
-#### **User Management**
-```http
-POST /api/v1/auth/login
-POST /api/v1/auth/register
-GET /api/v1/user/portfolio
-POST /api/v1/user/watchlist
-```
-
-### **WebSocket Events**
-
-#### **Real-time Data Streams**
-```javascript
-// Subscribe to real-time price updates
-ws.send(JSON.stringify({
-  action: 'subscribe',
-  channel: 'price',
-  symbol: 'AAPL'
-}));
-
-// Subscribe to sentiment updates
-ws.send(JSON.stringify({
-  action: 'subscribe',
-  channel: 'sentiment',
-  symbol: 'AAPL'
-}));
-```
-
-### **SDK Libraries**
-
-#### **Python SDK**
-```python
-from stockscouter import StockScouter
-
-client = StockScouter(api_key='your_api_key')
-
-# Get real-time quote
-quote = client.get_quote('AAPL')
-
-# Get technical analysis
-analysis = client.get_technical_analysis('AAPL')
-
-# Get AI predictions
-predictions = client.get_predictions('AAPL')
-```
-
-#### **JavaScript SDK**
-```javascript
-import { StockScouter } from '@stockscouter/sdk';
-
-const client = new StockScouter('your_api_key');
-
-// Get real-time data
-const quote = await client.getQuote('AAPL');
-
-// Get sentiment analysis
-const sentiment = await client.getSentiment('AAPL');
-```
+### **SDK & Integration Support**
+- **Python SDK**: Comprehensive Python library for data scientists and quants
+- **JavaScript SDK**: Full-featured JS library for web applications
+- **REST API**: Standard RESTful endpoints with OpenAPI 3.0 documentation
+- **GraphQL Support**: Flexible data querying for complex analytics
+- **Webhook Integration**: Real-time notifications for critical market events
 
 ## 📞 **Support & Contact**
 
