@@ -41,16 +41,20 @@ class ResultsTable(ctk.CTkFrame):
         self.headers_frame.pack(fill="x", padx=5, pady=(0, 5))
         
         self.columns = [
-            ("ticker", "Ticker", 80),
-            ("strike", "Strike", 80),
-            ("expiry", "Expiry", 90),
-            ("net_ay", "Net AY", 80),
-            ("delta", "Δ", 60),
-            ("iv_rv_edge", "IV-RV", 70),
-            ("theta_sharpe", "Θ/σ", 70),
-            ("scc", "SCC", 70),
-            ("liquidity", "Liq", 60),
-            ("score", "Score", 80),
+            ("rank", "#", 50),
+            ("ticker", "Ticker", 70),
+            ("price", "Price", 70),
+            ("strike", "Strike", 70),
+            ("pct_otm", "%OTM", 60),
+            ("expiry", "Expiry", 85),
+            ("volume", "Vol", 70),
+            ("net_ay", "AY", 70),
+            ("delta", "Δ", 55),
+            ("iv_rv_edge", "IV-RV", 65),
+            ("theta_sharpe", "Θ/σ", 65),
+            ("scc", "SCC", 65),
+            ("liquidity", "Liq", 55),
+            ("score", "Score", 75),
         ]
         
         for col_id, col_name, width in self.columns:
@@ -135,6 +139,33 @@ class ResultsTable(ctk.CTkFrame):
         # Make row clickable
         row_frame.bind("<Button-1>", lambda e: self.app.select_result(result))
         
+        # Add row badge if applicable
+        rank = result.get("rank", 999)
+        score = result.get("score", 0)
+        badges = result.get("badges", [])
+        
+        badge_text = ""
+        badge_color = None
+        if rank <= 10 and score >= 70:
+            badge_text = "🔥"
+            badge_color = ("#2D5016", "#90EE90")
+        elif score >= 70:
+            badge_text = "⭐"
+            badge_color = ("#2D5016", "#90EE90")
+        elif badges:
+            badge_text = "⚠️"
+            badge_color = ("#C05000", "#FF8C00")
+        
+        if badge_text:
+            badge_label = ctk.CTkLabel(
+                row_frame,
+                text=badge_text,
+                width=25,
+                font=ctk.CTkFont(size=12),
+            )
+            badge_label.pack(side="left", padx=2)
+            badge_label.bind("<Button-1>", lambda e: self.app.select_result(result))
+        
         for col_id, col_name, width in self.columns:
             value = result.get(col_id, "")
             
@@ -144,10 +175,19 @@ class ResultsTable(ctk.CTkFrame):
                     text = f"{value:.3f}"
                 elif col_id == "scc":
                     text = f"{value:.4f}"
-                elif col_id in ["strike", "score"]:
+                elif col_id in ["strike", "score", "price"]:
                     text = f"{value:.1f}"
+                elif col_id == "pct_otm":
+                    text = f"{value:+.1f}%"
                 else:
                     text = f"{value:.2f}"
+            elif isinstance(value, int):
+                if col_id == "rank":
+                    text = f"#{value}"
+                elif col_id == "volume":
+                    text = f"{value:,}"
+                else:
+                    text = str(value)
             else:
                 text = str(value)
             

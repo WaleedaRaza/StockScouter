@@ -7,12 +7,8 @@ from typing import List, Dict, Any
 # Add parent to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from src.gui.mock_data import (
-    generate_mock_chain,
-    generate_mock_macro,
-    generate_mock_earnings,
-    generate_mock_dividends,
-)
+from src.gui.mock_data import generate_mock_earnings, generate_mock_dividends
+from src.gui.mock_data_enhanced import generate_enhanced_chain, generate_macro_data, TICKER_PROFILES
 from src.engine.features.baseline import compute_baseline_metrics
 from src.engine.features.vol import compute_iv_rv_edge, compute_theta_sharpe, compute_short_convexity_cost
 from src.engine.features.dealer import compute_gex
@@ -25,6 +21,18 @@ from src.engine.ui.details import generate_badges
 import yaml
 
 
+def detect_regime(macro_data: Dict) -> str:
+    """Detect market regime from macro data."""
+    from engine.models.regime_hmm import RegimeDetector
+    detector = RegimeDetector()
+    features = {
+        "vix_level": macro_data.get("vix", 15.0),
+        "vix_slope": macro_data.get("vix_change", 0) * 100,
+        "iv_rv_edge": 0.03,
+    }
+    return detector.predict(features)
+
+
 def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
     """Run the full scoring pipeline and return ranked results."""
     results = []
@@ -35,8 +43,16 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
         scoring_cfg = yaml.safe_load(f)
     weights = load_weights(os.path.join(config_dir, "weights.yaml"))
     
-    # Generate mock data
-    macro = generate_mock_macro()
+    # Generate enhanced mock data
+    macro_dict = generate_macro_data()
+    from engine.data.contracts import MacroInputs
+    macro = MacroInputs(
+        vix_spot=macro_dict["vix"],
+        vix_1m=macro_dict["vix"] + 0.5,
+        vix_3m=macro_dict["vix"] + 1.2,
+        move=random.uniform(90, 115),
+        credit_spread_proxy=random.uniform(0.6, 1.5)
+    )
     earnings_events = generate_mock_earnings(tickers)
     dividend_events = generate_mock_dividends(tickers)
     
@@ -49,8 +65,11 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
     })
     
     # Score each ticker
+    import random
     for ticker in tickers:
-        chain = generate_mock_chain(ticker)
+        if ticker not in TICKER_PROFILES:
+            continue
+        chain, spot, avg_iv = generate_enhanced_chain(ticker)
         
         for rec in chain.records:
             tau_days = (rec.expiry - rec.asof.date()).days
@@ -91,10 +110,17 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
             net_ay = net_ay_after_slippage(baseline.ay, rec)
             badges = generate_badges(components, scoring_cfg)
             
+            # Calculate %OTM
+            pct_otm = ((rec.strike - rec.underlying_price) / rec.underlying_price) * 100
+            
             results.append({
+                "rank": 0,  # Will be set after sorting
                 "ticker": rec.ticker,
+                "price": rec.underlying_price,
                 "strike": rec.strike,
+                "pct_otm": pct_otm,
                 "expiry": str(rec.expiry),
+                "volume": rec.volume or 0,
                 "net_ay": net_ay,
                 "delta": baseline.delta or 0.0,
                 "iv_rv_edge": iv_rv_edge,
@@ -108,7 +134,19 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
                 "breakeven": baseline.breakeven,
                 "upside_potential": baseline.upside_potential,
                 "breakout_prob": 0.05,
+                "iv": rec.iv,
+                "gamma": rec.greeks.gamma if rec.greeks else 0,
+                "theta": rec.greeks.theta if rec.greeks else 0,
+                "vega": rec.greeks.vega if rec.greeks else 0,
+                "bid": rec.bid,
+                "ask": rec.ask,
+                "oi": rec.open_interest or 0,
             })
+    
+    # Sort by score and add ranks
+    results.sort(key=lambda x: x["score"], reverse=True)
+    for idx, result in enumerate(results):
+        result["rank"] = idx + 1
     
     return results
 
