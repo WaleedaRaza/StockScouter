@@ -2,6 +2,7 @@
 
 import sys
 import os
+import random
 from typing import List, Dict, Any
 
 # Add parent to path
@@ -65,7 +66,6 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
     })
     
     # Score each ticker
-    import random
     for ticker in tickers:
         if ticker not in TICKER_PROFILES:
             continue

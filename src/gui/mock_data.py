@@ -99,7 +99,8 @@ def generate_mock_earnings(tickers: List[str]) -> List[EarningsEvent]:
     """Generate mock earnings events."""
     events = []
     for ticker in random.sample(tickers, min(2, len(tickers))):
-        announce_date = date.today() + timedelta(days=random.randint(5, 45))
+        # Generate earnings events further out to avoid filtering all options
+        announce_date = date.today() + timedelta(days=random.randint(60, 120))
         events.append(EarningsEvent(ticker=ticker, announce_date=announce_date))
     return events
 

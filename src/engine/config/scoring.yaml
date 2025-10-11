@@ -2,10 +2,10 @@
 
 gates:
   earnings_exclude: true
-  min_net_ay: 0.05         # 5% annualized minimum after slippage
-  min_open_interest: 200
-  max_spread_pct_of_premium: 0.03
-  exdiv_hazard_cap: 0.30
+  min_net_ay: 0.01         # 1% annualized minimum after slippage (relaxed for demo)
+  min_open_interest: 50    # Lowered for demo
+  max_spread_pct_of_premium: 0.10  # Relaxed for demo
+  exdiv_hazard_cap: 0.80   # Much higher for demo
 
 defaults:
   tau_days: [14, 21, 30]
