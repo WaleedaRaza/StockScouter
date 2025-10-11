@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "covered-calls-engine"
+version = "0.1.0"
+description = "Productionized covered-call scoring engine with GPU MC, dealer flow, and ML"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Waleed" }]
+license = { text = "MIT" }
+dependencies = [
+  "pydantic>=2.4",
+  "numpy>=1.26",
+  "pandas>=2.1",
+  "PyYAML>=6.0",
+  "scipy>=1.11",
+  "tqdm>=4.66",
+  "loguru>=0.7.2",
+  "customtkinter>=5.2.0",
+  "pillow>=10.0",
+  "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+gpu = [
+  "torch>=2.2",
+  # Choose the matching CuPy package for your CUDA version; placeholder below
+  # e.g., "cupy-cuda12x>=12.0" or "cupy-cuda11x>=12.0"
+]
+ml = [
+  "xgboost>=2.0",
+  "scikit-learn>=1.3",
+  "hmmlearn>=0.3.2",
+  "shap>=0.43",
+]
+sim = [
+  "numba>=0.58",
+]
+stats = [
+  "statsmodels>=0.14",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+

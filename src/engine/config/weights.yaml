@@ -1,0 +1,62 @@
+# Regime weight profiles for final score components (normalized inputs)
+
+Calm:
+  iv_rv_edge: 0.22
+  theta_sharpe: 0.22
+  scc: 0.08
+  skew_tax: 0.05
+  gex_score: 0.12
+  event_hazard: 0.06
+  slippage_penalty: 0.05
+  liquidity: 0.10
+  breakout_prob: 0.05
+  portfolio_fit: 0.05
+
+Choppy:
+  iv_rv_edge: 0.15
+  theta_sharpe: 0.14
+  scc: 0.20
+  skew_tax: 0.08
+  gex_score: 0.10
+  event_hazard: 0.08
+  slippage_penalty: 0.06
+  liquidity: 0.07
+  breakout_prob: 0.07
+  portfolio_fit: 0.05
+
+TrendUp:
+  iv_rv_edge: 0.18
+  theta_sharpe: 0.18
+  scc: 0.10
+  skew_tax: 0.03
+  gex_score: 0.10
+  event_hazard: 0.05
+  slippage_penalty: 0.05
+  liquidity: 0.07
+  breakout_prob: 0.09
+  portfolio_fit: 0.15
+
+TrendDown:
+  iv_rv_edge: 0.16
+  theta_sharpe: 0.13
+  scc: 0.16
+  skew_tax: 0.07
+  gex_score: 0.10
+  event_hazard: 0.08
+  slippage_penalty: 0.05
+  liquidity: 0.07
+  breakout_prob: 0.08
+  portfolio_fit: 0.10
+
+Event:
+  iv_rv_edge: 0.10
+  theta_sharpe: 0.10
+  scc: 0.20
+  skew_tax: 0.10
+  gex_score: 0.10
+  event_hazard: 0.15
+  slippage_penalty: 0.05
+  liquidity: 0.05
+  breakout_prob: 0.10
+  portfolio_fit: 0.05
+

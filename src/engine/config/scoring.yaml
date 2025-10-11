@@ -1,0 +1,23 @@
+# Decision gates and defaults
+
+gates:
+  earnings_exclude: true
+  min_net_ay: 0.05         # 5% annualized minimum after slippage
+  min_open_interest: 200
+  max_spread_pct_of_premium: 0.03
+  exdiv_hazard_cap: 0.30
+
+defaults:
+  tau_days: [14, 21, 30]
+  delta_band: [0.25, 0.35]
+  normalization: rolling_zscore   # alternatives: minmax
+  lookback_normalization_days: 252
+  cvar_alpha: 0.95
+  cvar_limit: 0.10
+
+badges:
+  event_risk: { earnings_window_days: 7 }
+  low_liquidity: { oi_floor: 200, max_spread_pct: 0.05 }
+  skew_trap: { skew_z_above: 1.5 }
+  squeeze_risk: { near_zero_gamma_pct: 0.5 }
+
