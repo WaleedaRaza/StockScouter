@@ -31,10 +31,13 @@ class StatusBar(ctk.CTkFrame):
         
     def set_message(self, message: str, error: bool = False):
         """Set status message."""
-        self.message_label.configure(
-            text=message,
-            text_color=("#C00000", "#FF4444") if error else None,
-        )
+        if error:
+            self.message_label.configure(
+                text=message,
+                text_color=("#C00000", "#FF4444")
+            )
+        else:
+            self.message_label.configure(text=message)
         
     def _get_time(self) -> str:
         """Get formatted current time."""
