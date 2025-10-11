@@ -1,6 +1,7 @@
 """Enhanced details panel with ALL metrics (70+ data points)."""
 
 import customtkinter as ctk
+import random
 from typing import TYPE_CHECKING, Dict, Any, Optional
 
 if TYPE_CHECKING:
