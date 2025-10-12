@@ -36,6 +36,10 @@ def detect_regime(macro_data: Dict) -> str:
 
 def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
     """Run the full scoring pipeline and return ranked results."""
+    import time
+    t_start = time.time()
+    print(f"\n🔄 Starting scoring for {len(tickers)} tickers...")
+    
     results = []
     
     # Load configs
@@ -43,6 +47,7 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
     with open(os.path.join(config_dir, "scoring.yaml"), "r") as f:
         scoring_cfg = yaml.safe_load(f)
     weights = load_weights(os.path.join(config_dir, "weights.yaml"))
+    print(f"✓ Configs loaded ({time.time() - t_start:.2f}s)")
     
     # Generate enhanced mock data
     macro_dict = generate_macro_data()
@@ -66,11 +71,14 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
     })
     
     # Score each ticker
-    for ticker in tickers:
+    for idx, ticker in enumerate(tickers):
+        t_ticker = time.time()
         if ticker not in TICKER_PROFILES:
             continue
         chain, spot, avg_iv = generate_enhanced_chain(ticker)
+        print(f"  [{idx+1}/{len(tickers)}] {ticker}: generated {len(chain.records)} options", end=" ")
         
+        ticker_passed = 0
         for rec in chain.records:
             tau_days = (rec.expiry - rec.asof.date()).days
             
@@ -82,6 +90,7 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
             gate_result = run_gates(rec, baseline.ay, tau_days, scoring_cfg, earnings_events, dividend_events)
             if not gate_result.passed:
                 continue
+            ticker_passed += 1
                 
             # Feature components
             rv_hat = 0.25
@@ -142,11 +151,14 @@ def run_scoring_pipeline(tickers: List[str]) -> List[Dict[str, Any]]:
                 "ask": rec.ask,
                 "oi": rec.open_interest or 0,
             })
+        
+        print(f"→ {ticker_passed} passed gates ({time.time() - t_ticker:.2f}s)")
     
     # Sort by score and add ranks
     results.sort(key=lambda x: x["score"], reverse=True)
     for idx, result in enumerate(results):
         result["rank"] = idx + 1
     
+    print(f"\n✅ Scoring complete: {len(results)} opportunities found in {time.time() - t_start:.2f}s\n")
     return results
 

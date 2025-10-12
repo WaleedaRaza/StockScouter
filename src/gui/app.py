@@ -190,10 +190,10 @@ class CoveredCallsApp(ctk.CTk):
                 self.watchlist.append(ticker)
         
         self.watchlist_panel.refresh()
-        self.status_bar.set_message("📊 Loading demo data...")
+        self.status_bar.set_message("📊 Demo watchlist loaded. Click 'Run Scoring' to analyze.")
         
-        # Auto-run scoring after a brief delay
-        self.after(500, self._auto_run_scoring)
+        # DISABLED: Auto-run scoring - let user trigger manually
+        # self.after(500, self._auto_run_scoring)
     
     def _auto_run_scoring(self):
         """Run scoring and auto-select top result."""
