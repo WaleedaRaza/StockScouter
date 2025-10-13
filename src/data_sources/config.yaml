@@ -49,13 +49,13 @@ metrics:
   # --- Core Real-Time Market Data ---
   current_price:
     provider: polygon
-    path: "/v2/last/trade/{ticker}"
-    description: "Latest trade price + timestamp"
+    path: "/v2/aggs/ticker/{ticker}/prev"
+    description: "Previous day close (free tier compatible)"
     
   bid_ask:
     provider: polygon
-    path: "/v2/last/nbbo/{ticker}"
-    description: "National best bid/offer + sizes + timestamp"
+    path: "/v2/snapshot/locale/us/markets/stocks/tickers/{ticker}"
+    description: "Snapshot with bid/ask (free tier)"
     
   daily_prev_ohlcv:
     provider: polygon
@@ -75,8 +75,8 @@ metrics:
   # --- Options Chain Data ---
   options_chain_snapshot:
     provider: polygon
-    path: "/v3/snapshot/options/{underlying}"
-    description: "All strikes/expiries + IV + Greeks + OI"
+    path: "/v3/reference/options/contracts"
+    description: "Options contracts list (free tier - limited data)"
     
   option_contract_snapshot:
     provider: polygon

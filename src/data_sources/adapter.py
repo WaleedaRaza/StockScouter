@@ -53,8 +53,17 @@ class DataAdapter:
         for key, value in headers_template.items():
             # Substitute environment variables
             if isinstance(value, str) and '${' in value:
-                var_name = value.replace('${', '').replace('}', '')
-                headers[key] = self.api_keys.get(var_name, '')
+                # Extract variable name from ${VAR_NAME} pattern
+                import re
+                match = re.search(r'\$\{([^}]+)\}', value)
+                if match:
+                    var_name = match.group(1)
+                    api_key = self.api_keys.get(var_name, '')
+                    # Replace ${VAR_NAME} with actual key
+                    headers[key] = value.replace(f'${{{var_name}}}', api_key)
+                    print(f"[DEBUG] Substituted {var_name} in header: {key} -> {headers[key][:20]}...")
+                else:
+                    headers[key] = value
             else:
                 headers[key] = value
         
@@ -74,13 +83,28 @@ class DataAdapter:
         self,
         url: str,
         headers: Dict[str, str],
-        params: Optional[Dict[str, Any]] = None
+        params: Optional[Dict[str, Any]] = None,
+        provider: Optional[str] = None
     ) -> Dict[str, Any]:
         """Fetch data with retry logic."""
         retry_config = self.defaults['retry']
         retries = retry_config['retries']
         backoff = retry_config['backoff_seconds']
         timeout = self.defaults['http_timeout_seconds']
+        
+        # Polygon uses query params for auth, not headers
+        if provider == 'polygon':
+            if params is None:
+                params = {}
+            # Extract API key from Bearer token header
+            if 'Authorization' in headers:
+                auth_header = headers.pop('Authorization', '')
+                api_key = auth_header.replace('Bearer ', '').strip()
+                if api_key:
+                    params['apiKey'] = api_key
+                    print(f"[DEBUG] Polygon auth: Using apiKey query param")
+            else:
+                print(f"[DEBUG] Polygon: No Authorization header found, headers={headers}")
         
         for attempt in range(retries + 1):
             try:
@@ -161,7 +185,9 @@ class DataAdapter:
         """Fetch from a specific provider."""
         headers = self._get_headers(provider)
         url = self._build_url(provider, path, **params)
-        return self._fetch_with_retry(url, headers)
+        print(f"[DEBUG] Provider: {provider}, URL: {url}")
+        print(f"[DEBUG] Headers before: {headers}")
+        return self._fetch_with_retry(url, headers, params=None, provider=provider)
     
     def _compute_metric(
         self,
