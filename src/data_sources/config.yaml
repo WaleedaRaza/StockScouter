@@ -1,0 +1,252 @@
+defaults:
+  http_timeout_seconds: 6
+  retry: 
+    retries: 2
+    backoff_seconds: 0.4
+  headers:
+    polygon: 
+      Authorization: "Bearer ${POLYGON_API_KEY}"
+    finnhub: 
+      X-Finnhub-Token: "${FINNHUB_API_KEY}"
+    benzinga: 
+      token: "${BENZINGA_API_KEY}"
+    unusualwhales: 
+      Authorization: "Bearer ${UW_API_TOKEN}"
+    intrinio: 
+      Authorization: "Bearer ${INTRINIO_API_KEY}"
+    sec: 
+      User-Agent: "Waleed CoveredCall Analyzer (waleed@coveredcalls.io)"
+    finra: {}
+
+vendors:
+  polygon:
+    base: "https://api.polygon.io"
+  finnhub:
+    base: "https://finnhub.io/api/v1"
+  benzinga:
+    base: "https://api.benzinga.com/api/v2.1"
+  cboe:
+    vix_page: "https://www.cboe.com/tradable_products/vix/"
+    put_call_page: "https://www.cboe.com/us/options/market_statistics/daily/"
+  cfe:
+    term_structure_page: "https://markets.cboe.com/us/futures/market_statistics/vix/"
+  finra:
+    base: "https://api.finra.org"
+  sec:
+    base: "https://data.sec.gov"
+  orats:
+    base: "https://api.orats.io"
+  unusualwhales:
+    base: "https://api.unusualwhales.com"
+  intrinio:
+    base: "https://api-v2.intrinio.com"
+  nasdaq:
+    page: "https://nasdaqtrader.com/asp/short_interest.asp"
+  federalreserve:
+    fomc_page: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+
+metrics:
+  # --- Core Real-Time Market Data ---
+  current_price:
+    provider: polygon
+    path: "/v2/last/trade/{ticker}"
+    description: "Latest trade price + timestamp"
+    
+  bid_ask:
+    provider: polygon
+    path: "/v2/last/nbbo/{ticker}"
+    description: "National best bid/offer + sizes + timestamp"
+    
+  daily_prev_ohlcv:
+    provider: polygon
+    path: "/v2/aggs/ticker/{ticker}/prev"
+    description: "Previous day OHLC + volume"
+    
+  market_cap:
+    provider: polygon
+    path: "/v3/reference/tickers/{ticker}"
+    description: "Market cap and company metadata"
+    
+  previous_close:
+    provider: polygon
+    path: "/v2/aggs/ticker/{ticker}/prev"
+    description: "Previous close from prev bar"
+
+  # --- Options Chain Data ---
+  options_chain_snapshot:
+    provider: polygon
+    path: "/v3/snapshot/options/{underlying}"
+    description: "All strikes/expiries + IV + Greeks + OI"
+    
+  option_contract_snapshot:
+    provider: polygon
+    path: "/v3/snapshot/options/{underlying}/{option_ticker}"
+    description: "Single contract snapshot"
+    
+  option_quotes_history:
+    provider: polygon
+    path: "/v3/quotes/{option_ticker}"
+    description: "Historical bid/ask quotes"
+    
+  option_trades_last:
+    provider: polygon
+    path: "/v2/last/trade/{option_ticker}"
+    description: "Last trade + timestamp"
+
+  # --- Historical Data ---
+  historical_prices_daily:
+    provider: polygon
+    path: "/v2/aggs/ticker/{ticker}/range/1/day/{from}/{to}"
+    description: "Daily OHLCV bars (1-3 years)"
+    
+  historical_volume_daily:
+    provider: polygon
+    path: "/v2/aggs/ticker/{ticker}/range/1/day/{from}/{to}"
+    description: "Daily volume history"
+    
+  realized_volatility:
+    provider: local_compute
+    source_metric: "historical_prices_daily"
+    description: "Compute HV from log returns"
+
+  # --- Historical IV / Skew (premium) ---
+  iv_surface_history:
+    provider: orats
+    path: "/iv/surface"
+    description: "Historical IV by expiry + skew"
+    
+  iv_by_expiry_history:
+    provider: orats
+    path: "/iv/by-expiry"
+    description: "30-90d term structure buckets"
+    
+  iv_skew_history:
+    provider: orats
+    path: "/iv/skew"
+    description: "Smile/skew time series"
+
+  # --- Market Context ---
+  vix_index_level:
+    provider: cboe
+    page: "vix_page"
+    description: "CBOE VIX index level (scrape or fallback to ^VIX)"
+    
+  vix_term_structure:
+    provider: cfe
+    page: "term_structure_page"
+    description: "VX futures 1M/3M term structure"
+    
+  spy_price_change:
+    provider: polygon
+    path: "/v2/aggs/ticker/SPY/prev"
+    description: "SPY daily change for market context"
+    
+  qqq_price_change:
+    provider: polygon
+    path: "/v2/aggs/ticker/QQQ/prev"
+    description: "QQQ daily change for market context"
+    
+  put_call_ratio_market:
+    provider: cboe
+    page: "put_call_page"
+    description: "Total/equity/ETF PCR"
+    
+  market_gex:
+    provider: compute_from_chain
+    inputs: ["options_chain_snapshot"]
+    description: "Sum(±Gamma * OI * contract_size) across chain"
+
+  # --- Corporate Events ---
+  earnings_calendar:
+    provider: benzinga
+    path: "/calendar/earnings"
+    description: "Earnings dates with BMO/AMC/time"
+    
+  dividends_history:
+    provider: polygon
+    path: "/v3/reference/dividends"
+    description: "Ex-div dates + amounts"
+    
+  stock_splits_history:
+    provider: polygon
+    path: "/v3/reference/splits"
+    description: "Stock split history"
+    
+  fomc_calendar:
+    provider: federalreserve
+    page: "fomc_page"
+    description: "FOMC meeting dates"
+
+  # --- Fundamentals (optional) ---
+  fundamentals_basic:
+    provider: finnhub
+    path: "/stock/metric?symbol={ticker}&metric=all"
+    description: "Forward P/E, beta, etc."
+    
+  avg_volume_30d:
+    provider: compute_from_prices
+    inputs: ["historical_prices_daily"]
+    description: "30-day SMA of volume"
+    
+  institutional_ownership:
+    primary:
+      provider: intrinio
+      path: "/securities/{ticker}/institutional_holdings"
+    fallback:
+      provider: finnhub
+      path: "/institutional/ownership?symbol={ticker}"
+    description: "13F-based institutional holdings"
+    
+  short_interest:
+    primary:
+      provider: finra
+      path: "/otcMarket/name/consolidatedShortInterest"
+    fallback:
+      provider: nasdaq
+      page: "https://nasdaqtrader.com/asp/short_interest.asp"
+    description: "Consolidated short interest"
+    
+  analyst_ratings:
+    provider: finnhub
+    path: "/stock/recommendation?symbol={ticker}"
+    description: "Analyst recommendations"
+
+  # --- Alternative Data (optional) ---
+  social_sentiment:
+    provider: finnhub
+    path: "/stock/social-sentiment?symbol={ticker}"
+    description: "Reddit/Twitter sentiment"
+    
+  news_sentiment:
+    provider: finnhub
+    path: "/news-sentiment?symbol={ticker}"
+    description: "News sentiment scores"
+    
+  unusual_options_activity:
+    provider: unusualwhales
+    path: "/v3/flow"
+    description: "Unusual options activity alerts"
+    
+  dark_pool_prints:
+    provider: finra
+    path: "/otcMarket/name/weeklySummary"
+    description: "ATS & non-ATS weekly summary"
+    
+  insider_transactions:
+    provider: sec
+    path: "/submissions/CIK{cik}.json"
+    description: "Parse Form 4 insider trades"
+
+# Cache TTL settings (seconds)
+cache_ttl:
+  current_price: 1            # 1 second for real-time
+  bid_ask: 1
+  options_chain_snapshot: 5   # 5 seconds for options
+  daily_prev_ohlcv: 3600      # 1 hour for daily bars
+  historical_prices_daily: 86400  # 1 day
+  earnings_calendar: 3600
+  dividends_history: 86400
+  fundamentals_basic: 86400
+  vix_index_level: 60
+  market_gex: 300             # 5 minutes
+
