@@ -8,6 +8,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/portfolio_screen.dart';
 import 'screens/news_screen.dart';
 
+
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/ticker_input_screen.dart';
@@ -58,6 +59,7 @@ final _router = GoRouter(
           path: '/news',
           builder: (context, state) => const NewsScreen(),
         ),
+
         GoRoute(
           path: '/analysis',
           builder: (context, state) => const TickerInputScreen(),
@@ -113,6 +115,7 @@ class _ScaffoldWithNavigationState extends State<ScaffoldWithNavigation> {
       label: 'News',
       route: '/news',
     ),
+
     NavigationItem(
       icon: Icons.analytics,
       label: 'Analysis',

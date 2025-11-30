@@ -102,6 +102,7 @@ class DashboardScreen extends StatelessWidget {
         color: Colors.orange,
         onTap: () => context.go('/news'),
       ),
+
       QuickAction(
         icon: Icons.person,
         title: 'Profile',

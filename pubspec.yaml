@@ -98,6 +98,9 @@ dependencies:
   # URL Launcher
   url_launcher: ^6.2.5
   
+  # HTML Parsing
+  html: ^0.15.4
+  
   # QR Code
   qr_flutter: ^4.1.0
   
